@@ -9,17 +9,20 @@ class Dices extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: const Text('正二十面体ダイス')),
+        appBar: AppBar(title: const Text('ドラッグで回転する正二十面体')),
         body: Center(
-          child: ZIllustration(
-            zoom: 1.5,
-            children: [
-              Icosahedron(
-                size: 200,
-                goodColor: Colors.green,
-                badColor: Colors.red,
-              ),
-            ],
+          child: ZDragDetector(
+            builder: (context, controller) {
+              return ZIllustration(
+                zoom: 1.5,
+                children: [
+                  ZPositioned(
+                    rotate: controller.rotate,
+                    child: Icosahedron(size: 100),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -29,26 +32,20 @@ class Dices extends StatelessWidget {
 
 class Icosahedron extends StatelessWidget {
   final double size;
-  final Color goodColor;
-  final Color badColor;
 
   const Icosahedron({
     super.key,
     required this.size,
-    required this.goodColor,
-    required this.badColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final vertices = _getIcosahedronVertices(size / 2);
     final faces = _getIcosahedronFaces();
+    final colors = _generateColors(faces.length);
 
     return ZGroup(
       children: List.generate(faces.length, (index) {
-        final isBadLuck = index == 0; // 1面だけ大凶
-        final color = isBadLuck ? badColor : goodColor;
-
         // 各面の頂点を取得
         final face = faces[index];
         final v1 = vertices[face[0]];
@@ -58,15 +55,28 @@ class Icosahedron extends StatelessWidget {
         return ZShape(
           stroke: 1,
           path: [
-            ZMove.vector(v1), // v1はZVector型
-            ZLine.vector(v2), // v2はZVector型
-            ZLine.vector(v3), // v3はZVector型
+            ZMove.vector(v1),
+            ZLine.vector(v2),
+            ZLine.vector(v3),
           ],
-          color: color,
+          color: colors[index],
           fill: true,
         );
       }),
     );
+  }
+
+  // 面ごとの色を生成
+  List<Color> _generateColors(int count) {
+    final random = Random();
+    return List.generate(count, (index) {
+      return Color.fromARGB(
+        255,
+        random.nextInt(256),
+        random.nextInt(256),
+        random.nextInt(256),
+      );
+    });
   }
 
   // 正二十面体の頂点を計算
