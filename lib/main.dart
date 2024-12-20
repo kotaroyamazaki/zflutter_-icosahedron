@@ -5,14 +5,16 @@ import 'package:zflutter/zflutter.dart';
 void main() => runApp(Dices());
 
 class Dices extends StatefulWidget {
+  const Dices({super.key});
+
   @override
-  _DicesState createState() => _DicesState();
+  DicesState createState() => DicesState();
 }
 
-class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
+class DicesState extends State<Dices> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
-  int _currentFace = 0; // 現在の正面の面
+// 現在の正面の面
   late ZVector _rotationStart;
   late ZVector _rotationEnd;
 
@@ -22,7 +24,7 @@ class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
 
     // アニメーションコントローラーの初期化
     _animationController = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
       vsync: this,
     );
 
@@ -52,10 +54,13 @@ class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
     _rotationStart = _rotationEnd;
 
     // 次の回転を決定
-    _rotationEnd = getIcosahedronRotation(nextFace);
+    _rotationEnd = getIcosahedronRotation(nextFace).add(
+      x: 5 * pi * random.nextDouble(),
+      y: 5 * pi * random.nextDouble(),
+      z: 5 * pi * random.nextDouble(),
+    );
 
     // アニメーションを開始
-    _currentFace = nextFace;
     _animationController.forward(from: 0);
   }
 
@@ -89,7 +94,6 @@ class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
 
   // 各面の回転を取得
   ZVector getIcosahedronRotation(int face) {
-    // 適当な回転を設定（必要に応じて調整可能）
     const tau = 2 * pi;
     return ZVector(
       (face % 5) * (tau / 5), // 面ごとの回転角度
