@@ -1,39 +1,22 @@
 import 'dart:math';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:zflutter/zflutter.dart';
 
 void main() => runApp(Dices());
 
 class Dices extends StatefulWidget {
+  @override
   _DicesState createState() => _DicesState();
 }
 
 class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
   late AnimationController animationController;
-
-  late SpringSimulation simulation;
-  int num = 1;
-  int num2 = 1;
   double zRotation = 0;
+  int faceIndex = 0;
 
   @override
   void initState() {
     super.initState();
-
-    simulation = SpringSimulation(
-      SpringDescription(
-        mass: 1,
-        stiffness: 20,
-        damping: 2,
-      ),
-      1, // starting point
-      0, // ending point
-      1, // velocity
-    );
-
     animationController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 2000))
           ..addListener(() {
@@ -43,8 +26,7 @@ class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
 
   void random() {
     zRotation = Random().nextDouble() * tau;
-    num = Random().nextInt(5) + 1;
-    num2 = 6 - Random().nextInt(5);
+    faceIndex = Random().nextInt(20);
   }
 
   @override
@@ -53,24 +35,14 @@ class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
       curve: Curves.ease,
       parent: animationController,
     );
-    final firstHalf = CurvedAnimation(
-      curve: Interval(0, 1),
-      parent: animationController,
-    );
-    final secondHalf = CurvedAnimation(
-      curve: Interval(0, 0.3),
-      parent: animationController,
-    );
-
-    final zoom = (simulation.x(animationController.value)).abs() / 2 + 0.5;
 
     return GestureDetector(
       onTap: () {
-        if (animationController.isAnimating)
+        if (animationController.isAnimating) {
           animationController.reset();
-        else {
-          animationController.forward(from: 0);
+        } else {
           random();
+          animationController.forward(from: 0);
         }
       },
       child: Container(
@@ -78,43 +50,25 @@ class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
         child: ZIllustration(
           zoom: 1.5,
           children: [
-            ZPositioned(
-              translate: ZVector.only(x: 100 * zoom),
-              child: ZGroup(
-                children: [
-                  ZPositioned(
-                    scale: ZVector.all(zoom),
-                    rotate:
-                        getRotation(num2).multiplyScalar(curvedValue.value) -
-                            ZVector.all((tau / 2) * (firstHalf.value)) -
-                            ZVector.all((tau / 2) * (secondHalf.value)),
-                    child: ZPositioned(
-                        rotate: ZVector.only(
-                            z: -zRotation * 1.9 * (animationController.value)),
-                        child: Dice(
-                          zoom: zoom,
-                          color: Colors.green,
-                        )),
+            ZGroup(
+              children: List.generate(20, (index) {
+                final isBadLuck = index == 0; // 大凶の面
+                final color = isBadLuck ? Colors.red : Colors.green;
+
+                // 正二十面体の面を配置
+                final rotation = getIcosahedronFaceRotation(index);
+
+                return ZPositioned(
+                  rotate: rotation,
+                  translate: ZVector.only(z: 100),
+                  child: ZPolygon(
+                    sides: 3, // 三角形
+                    stroke: 1,
+                    color: color,
+                    radius: 50,
                   ),
-                ],
-              ),
-            ),
-            ZPositioned(
-              translate: ZVector.only(x: -100 * zoom),
-              child: ZGroup(
-                children: [
-                  ZPositioned(
-                    scale: ZVector.all(zoom),
-                    rotate: getRotation(num).multiplyScalar(curvedValue.value) -
-                        ZVector.all((tau / 2) * (firstHalf.value)) -
-                        ZVector.all((tau / 2) * (secondHalf.value)),
-                    child: ZPositioned(
-                        rotate: ZVector.only(
-                            z: -zRotation * 2.1 * (animationController.value)),
-                        child: Dice(zoom: zoom)),
-                  ),
-                ],
-              ),
+                );
+              }),
             ),
           ],
         ),
@@ -129,178 +83,12 @@ class _DicesState extends State<Dices> with SingleTickerProviderStateMixin {
   }
 }
 
-ZVector getRotation(int num) {
-  switch (num) {
-    case 1:
-      return ZVector.zero;
-    case 2:
-      return ZVector.only(x: tau / 4);
-    case 3:
-      return ZVector.only(y: tau / 4);
-    case 4:
-      return ZVector.only(y: 3 * tau / 4);
-    case 5:
-      return ZVector.only(x: 3 * tau / 4);
-    case 6:
-      return ZVector.only(y: tau / 2);
-  }
-  throw ('num $num is not in the dice');
-}
-
-class Face extends StatelessWidget {
-  final double zoom;
-  final Color? color;
-
-  const Face({super.key, this.zoom = 1, this.color = Colors.white});
-
-  @override
-  Widget build(BuildContext context) {
-    return ZRect(
-      stroke: 50 * zoom,
-      width: 50,
-      height: 50,
-      color: color ?? Colors.white,
-    );
-  }
-}
-
-class Dot extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ZCircle(
-      diameter: 15,
-      stroke: 0,
-      fill: true,
-      color: Colors.white,
-    );
-  }
-}
-
-class GroupTwo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ZGroup(
-      sortMode: SortMode.update,
-      children: [
-        ZPositioned(translate: ZVector.only(y: -20), child: Dot()),
-        ZPositioned(translate: ZVector.only(y: 20), child: Dot()),
-      ],
-    );
-  }
-}
-
-class GroupFour extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ZGroup(
-      sortMode: SortMode.update,
-      children: [
-        ZPositioned(translate: ZVector.only(x: 20, y: 0), child: GroupTwo()),
-        ZPositioned(translate: ZVector.only(x: -20, y: 0), child: GroupTwo()),
-      ],
-    );
-  }
-}
-
-class Dice extends StatelessWidget {
-  final Color color;
-  final double zoom;
-
-  const Dice({this.zoom = 1, this.color = const Color(0xffF23726)});
-
-  @override
-  Widget build(BuildContext context) {
-    return ZGroup(
-      children: [
-        ZGroup(
-          sortMode: SortMode.update,
-          children: [
-            ZPositioned(
-                translate: ZVector.only(z: -25),
-                child: Face(zoom: zoom, color: color)),
-            ZPositioned(
-                translate: ZVector.only(z: 25),
-                child: Face(zoom: zoom, color: color)),
-            ZPositioned(
-                translate: ZVector.only(y: 25),
-                rotate: ZVector.only(x: tau / 4),
-                child: Face(
-                  zoom: zoom,
-                  color: color,
-                )),
-            ZPositioned(
-                translate: ZVector.only(y: -25),
-                rotate: ZVector.only(x: tau / 4),
-                child: Face(zoom: zoom, color: color)),
-          ],
-        ),
-        //one
-        ZPositioned(translate: ZVector.only(z: 50), child: Dot()),
-        //two
-        ZPositioned(
-          rotate: ZVector.only(x: tau / 4),
-          translate: ZVector.only(y: 50),
-          child: ZGroup(
-            sortMode: SortMode.update,
-            children: [
-              ZPositioned(translate: ZVector.only(y: -20), child: Dot()),
-              ZPositioned(translate: ZVector.only(y: 20), child: Dot()),
-            ],
-          ),
-        ),
-        //three
-        ZPositioned(
-          rotate: ZVector.only(y: tau / 4),
-          translate: ZVector.only(x: 50),
-          child: ZGroup(
-            sortMode: SortMode.update,
-            children: [
-              Dot(),
-              ZPositioned(translate: ZVector.only(x: 20, y: -20), child: Dot()),
-              ZPositioned(translate: ZVector.only(x: -20, y: 20), child: Dot()),
-            ],
-          ),
-        ),
-        //four
-        ZPositioned(
-          rotate: ZVector.only(y: tau / 4),
-          translate: ZVector.only(x: -50),
-          child: ZGroup(
-            sortMode: SortMode.update,
-            children: [
-              ZPositioned(
-                  translate: ZVector.only(x: 20, y: 0), child: GroupTwo()),
-              ZPositioned(
-                  translate: ZVector.only(x: -20, y: 0), child: GroupTwo()),
-            ],
-          ),
-        ),
-
-        //five
-        ZPositioned(
-          rotate: ZVector.only(x: tau / 4),
-          translate: ZVector.only(y: -50),
-          child: ZGroup(
-            sortMode: SortMode.update,
-            children: [
-              Dot(),
-              ZPositioned(child: GroupFour()),
-            ],
-          ),
-        ),
-
-        //six
-        ZPositioned(
-          translate: ZVector.only(z: -50),
-          child: ZGroup(
-            sortMode: SortMode.update,
-            children: [
-              ZPositioned(rotate: ZVector.only(z: tau / 4), child: GroupTwo()),
-              ZPositioned(child: GroupFour()),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+// 正二十面体の各面の回転を計算
+ZVector getIcosahedronFaceRotation(int index) {
+  const tau = 2 * pi; // 1周の回転
+  // 面ごとの回転（簡易的な設定、精度を上げる場合は座標データを使用）
+  return ZVector.only(
+    x: (index * tau / 20) % tau,
+    y: ((index + 3) * tau / 20) % tau,
+  );
 }
