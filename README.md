@@ -1,16 +1,6 @@
-# risky_dice
+# zflutter_icosahedron
 
-A new Flutter project.
 
-## Getting Started
+Sample icosahedral dice implemented using [zflutter](https://github.com/jamesblasco/zflutter)
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![Simulator Screen Recording - iPhone SE (3rd generation) - 2024-12-21 at 11 58 50](https://github.com/user-attachments/assets/83a1a049-00a5-4602-8e64-3f6157923c6d)
